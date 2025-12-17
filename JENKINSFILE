@@ -50,12 +50,10 @@ pipeline {
 
         stage('Performance') {
             steps {
-                // Generamos el log con ab
+                // Generamos el log 
                 bat 'ab -n 100 -c 5 http://localhost:5000/sumar/1/1 > performance.log'
                 
-                // Forzamos a Jenkins 
-                perfReport parsers: [apacheBench(fileExtension: 'performance.log')], 
-                           sourceDataFiles: 'performance.log'
+                perfReport sourceDataFiles: 'performance.log'
             }
         }
 
