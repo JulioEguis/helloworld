@@ -14,7 +14,6 @@ pipeline {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     bat 'set PYTHONPATH=. && pytest --junitxml=result-unit.xml test\\unit'
                 }
-                // Publicación inmediata
                 junit 'result-unit.xml'
             }
         }
@@ -29,14 +28,12 @@ pipeline {
                         pytest --junitxml=result-rest.xml test\\rest
                     '''
                 }
-                // Publicación inmediata 
                 junit 'result-rest.xml'
             }
         }
 
         stage('Static') {
             steps {
-                // Análisis con Flake8 (Umbral: 8 inestable / 10 fallo)
                 bat 'flake8 app --output-file=flake8-report.txt || exit 0'
                 recordIssues tools: [flake8(pattern: 'flake8-report.txt')], 
                              qualityGates: [[threshold: 8, type: 'TOTAL', unstable: true], 
@@ -46,7 +43,6 @@ pipeline {
 
         stage('Security Test') {
             steps {
-                // Análisis con Bandit (Umbral: 2 inestable / 4 fallo)
                 bat 'bandit -r app -f xml -o bandit-report.xml || exit 0'
                 recordIssues tools: [bandit(pattern: 'bandit-report.xml')], 
                              qualityGates: [[threshold: 2, type: 'TOTAL', unstable: true], 
@@ -56,7 +52,6 @@ pipeline {
 
         stage('Performance') {
             steps {
-                // Pruebas de carga.
                 bat 'ab -n 100 -c 5 http://localhost:5000/sumar/1/1 > performance.txt'
                 performanceReport reportFiles: 'performance.txt', configType: 'AB'
             }
@@ -77,4 +72,3 @@ pipeline {
         }
     }
 }
-
