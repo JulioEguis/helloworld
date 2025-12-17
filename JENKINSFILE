@@ -65,15 +65,14 @@ pipeline {
             steps {
                 bat 'set PYTHONPATH=. && coverage run --source=app --omit=app/__init__.py,app/api.py -m pytest test/unit'
                 bat 'coverage xml -o coverage.xml'
-
+        
                 cobertura autoUpdateHealth: false,
                           autoUpdateStability: false,
                           coberturaReportFile: 'coverage.xml',
-                          lineUnhealthy: 85,
-                          lineUnstable: 95,
-                          conditionalUnhealthy: 80,
-                          conditionalUnstable: 90
+                          failUnhealthy: true,
+                          failUnstable: true
             }
         }
+
     }
 }
