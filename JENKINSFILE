@@ -56,7 +56,7 @@ pipeline {
                     performanceReport sourceDataFiles: 'performance.log'
                 }
             }
-        }
+        
 
         stage('Coverage') {
             steps {
