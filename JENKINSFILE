@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     stages {
+
         stage('Get Code') {
             steps {
                 bat 'dir'
@@ -36,7 +37,7 @@ pipeline {
         stage('Static') {
             steps {
                 bat 'flake8 app --output-file=flake8-report.txt || exit 0'
-                recordIssues tools: [flake8(pattern: 'flake8-report.txt')], 
+                recordIssues tools: [flake8(pattern: 'flake8-report.txt')],
                              qualityGates: [[threshold: 8, type: 'TOTAL', unstable: true]]
             }
         }
@@ -50,24 +51,28 @@ pipeline {
 
         stage('Performance') {
             steps {
-                catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
-                    bat 'ab -n 100 -c 5 http://localhost:5000/sumar/1/1 > performance.log'
-                    performanceReport sourceDataFiles: 'performance.log'
-                }
+                bat '''
+                C:\\UNIR\\apache-jmeter-5.5\\bin\\jmeter.bat ^
+                  -n ^
+                  -t test\\performance\\performance.jmx ^
+                  -l performance.jtl
+                '''
+                perfReport sourceDataFiles: 'performance.jtl'
             }
         }
 
         stage('Coverage') {
             steps {
-                script {
-                    bat 'set PYTHONPATH=. && coverage run --source=app --omit=app/__init__.py,app/api.py -m pytest test/unit'
-                    bat 'coverage xml -o coverage.xml'
-                    
-                    cobertura autoUpdateHealth: false, 
-                              autoUpdateStability: false, 
-                              coberturaReportFile: 'coverage.xml', 
-                              lineUnstable: 70
-                }
+                bat 'set PYTHONPATH=. && coverage run --source=app --omit=app/__init__.py,app/api.py -m pytest test/unit'
+                bat 'coverage xml -o coverage.xml'
+
+                cobertura autoUpdateHealth: false,
+                          autoUpdateStability: false,
+                          coberturaReportFile: 'coverage.xml',
+                          lineUnhealthy: 85,
+                          lineUnstable: 95,
+                          conditionalUnhealthy: 80,
+                          conditionalUnstable: 90
             }
         }
     }
