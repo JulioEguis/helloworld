@@ -53,7 +53,7 @@ pipeline {
         stage('Performance') {
             steps {
                 bat 'ab -n 100 -c 5 http://localhost:5000/sumar/1/1 > performance.txt'
-                performanceReport reportFiles: 'performance.txt', configType: 'AB'
+                performanceReport sourceDataFiles: 'performance.txt'
             }
         }
 
