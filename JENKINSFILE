@@ -5,16 +5,20 @@ pipeline {
 
         stage('Get Code') {
             steps {
-                bat 'dir'
-                echo WORKSPACE
+                git 'https://github.com/JulioEguis/helloworld.git'
             }
         }
 
         stage('Unit') {
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    bat 'set PYTHONPATH=. && pytest --junitxml=result-unit.xml test\\unit'
+                    bat '''
+                        set PYTHONPATH=%WORKSPACE%
+                        coverage run --branch --source=app --omit=app\\__init__.py,app\\api.py ^
+                        -m pytest --junitxml=result-unit.xml test\\unit
+                    '''
                 }
+                bat 'coverage xml'
                 junit 'result-unit.xml'
             }
         }
@@ -63,14 +67,8 @@ pipeline {
 
         stage('Coverage') {
             steps {
-                bat 'set PYTHONPATH=. && coverage run --source=app --omit=app/__init__.py,app/api.py -m pytest test/unit'
-                bat 'coverage xml -o coverage.xml'
-        
-                cobertura autoUpdateHealth: false,
-                          autoUpdateStability: false,
-                          coberturaReportFile: 'coverage.xml',
-                          failUnhealthy: true,
-                          failUnstable: true
+                recordCoverage qualityGates: [[criticality: 'NOTE', integerThreshold: 95, metric: 'LINE', threshold: 95.0], [criticality: 'ERROR', integerThreshold: 85, metric: 'LINE', threshold: 85.0], [criticality: 'NOTE', integerThreshold: 90, metric: 'BRANCH', threshold: 90.0], [criticality: 'ERROR', integerThreshold: 80, metric: 'BRANCH', threshold: 80.0]], tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']]
+                
             }
         }
 
