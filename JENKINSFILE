@@ -40,12 +40,10 @@ pipeline {
 
         stage('Static') {
             steps {
-                bat 'flake8 app --exit-zero --output-file=flake8-report.txt'
-                recordIssues tools: [flake8(pattern: 'flake8-report.txt')],
-                             qualityGates: [
-                                 [threshold: 8, type: 'TOTAL', unstable: true],
-                                 [threshold: 10, type: 'TOTAL', healthy: false]
-                             ]
+                bat '''
+                    flake8 app --exit-zero --output-file=flake8-report.txt
+                '''
+                recordIssues tools: [flake8(pattern: 'flake8-report.txt')], qualityGates: [[threshold: 8, type: 'TOTAL', unstable: true], [threshold: 10, type: 'TOTAL', unstable: false]]
             }
         }
 
