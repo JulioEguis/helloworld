@@ -8,10 +8,10 @@ pipeline {
             agent { label 'master' } 
             steps {
                 git 'https://github.com/JulioEguis/helloworld.git'
-                sh '''
+                bat '''
                     whoami
                     hostname    
-                    echo ${WORKSPACE}
+                    echo %WORKSPACE%
                '''
                 stash name:'code', includes:'**'
             }
@@ -72,18 +72,19 @@ pipeline {
             }
         }
 
-        stage('Results') {
-            agent { label 'master' } 
-            steps {
-                unstash name:'unit-res'
-                unstash name:'rest-res' 
-                junit 'result*.xml' 
+            stage('Results') {
+                agent { label 'master' } 
+                steps {
+                    unstash name:'unit-res'
+                    unstash name:'rest-res' 
+                    junit 'result*.xml' 
+                }
             }
-        }
-    }
-            post {
-            always {
-            deleteDir()
+               stage('Limpieza') {
+                    agent { label 'master' }
+                    steps {
+                    deleteDir()
+            }
         }
     }
 }
