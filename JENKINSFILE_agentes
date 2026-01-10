@@ -8,18 +8,15 @@ pipeline {
             agent { label 'master' } 
             steps {
                 git 'https://github.com/JulioEguis/helloworld.git'
-                echo WORKSPACE
-                bat 'dir' 
+                sh '''
+                    whoami
+                    hostname    
+                    echo ${WORKSPACE}
+               '''
                 stash name:'code', includes:'**'
             }
         }
     
-        stage('Build') {
-            agent { label 'master' } 
-            steps {
-                echo 'Eyyy, esto es Python. No hay que compilar nada!!!'
-            }
-        }
         
         stage('Tests')
         {
@@ -31,7 +28,9 @@ pipeline {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             unstash name:'code'
                             sh '''
-                                ls -la
+                                whoami
+                                hostname
+                                echo ${WORKSPACE}
                                 export PYTHONPATH=${WORKSPACE}
                                 /usr/bin/pytest --junitxml=result-unit.xml test/unit
                             '''
@@ -46,7 +45,10 @@ pipeline {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             unstash name:'code'
                             sh '''
-                                # 1. COPIAR MAPPINGS (Permisos ya corregidos manualmente)
+                                whoami
+                                hostname
+                                echo ${WORKSPACE}
+                               
                                 cp -r test/wiremock/* /home/agent2/wiremock/
 
                                 # 2. INICIAR FLASK
@@ -55,14 +57,12 @@ pipeline {
 
                                 sleep 4
 
-                                # 3. INICIAR WIREMOCK (Usando el directorio que ya tiene los stubs copiados)
                                 java -jar /home/agent2/wiremock/wiremock-standalone-3.3.1.jar --port 9090 --root-dir /home/agent2/wiremock &
                                 
                                 export PYTHONPATH=${WORKSPACE}
                                 
                                 sleep 15
                                 
-                                # 4. EJECUTAR PRUEBAS
                                 /usr/bin/pytest --junitxml=result-rest.xml test/rest
                             '''
                             stash name:'rest-res', includes:'result-rest.xml'
@@ -81,4 +81,10 @@ pipeline {
             }
         }
     }
+            post {
+            always {
+            deleteDir()
+        }
+    }
 }
+
