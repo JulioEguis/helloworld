@@ -1,0 +1,91 @@
+pipeline {
+    agent none 
+
+    options { skipDefaultCheckout() }
+
+    stages {
+        stage('Get Code') {
+            agent { label 'master' } 
+            steps {
+                git 'https://github.com/JulioEguis/helloworld.git'
+                bat '''
+                    whoami
+                    hostname    
+                    echo %WORKSPACE%
+               '''
+                stash name:'code', includes:'**'
+            }
+        }
+    
+        
+        stage('Tests')
+        {
+            parallel
+            {
+                stage('Unit') {
+                    agent {label 'agent1'}
+                    steps {
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            unstash name:'code'
+                            sh '''
+                                whoami
+                                hostname
+                                echo ${WORKSPACE}
+                                export PYTHONPATH=${WORKSPACE}
+                                /usr/bin/pytest --junitxml=result-unit.xml test/unit
+                            '''
+                            stash name:'unit-res', includes:'result-unit.xml'
+                        }
+                    }
+                }   
+                
+                stage('Rest') {
+                    agent {label 'agent2'}
+                    steps {
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            unstash name:'code'
+                            sh '''
+                                whoami
+                                hostname
+                                echo ${WORKSPACE}
+                               
+                                cp -r test/wiremock/* /home/agent2/wiremock/
+
+                                # 2. INICIAR FLASK
+                                export FLASK_APP=app/api.py
+                                /usr/bin/flask run & 
+
+                                sleep 4
+
+                                java -jar /home/agent2/wiremock/wiremock-standalone-3.3.1.jar --port 9090 --root-dir /home/agent2/wiremock &
+                                
+                                export PYTHONPATH=${WORKSPACE}
+                                
+                                sleep 15
+                                
+                                /usr/bin/pytest --junitxml=result-rest.xml test/rest
+                            '''
+                            stash name:'rest-res', includes:'result-rest.xml'
+                        }
+                    }   
+                }       
+            }
+        }
+
+            stage('Results') {
+                agent { label 'master' } 
+                steps {
+                    unstash name:'unit-res'
+                    unstash name:'rest-res' 
+                    junit 'result*.xml' 
+                }
+            }
+               stage('Limpieza') {
+                    agent { label 'master' }
+                    steps {
+                    deleteDir()
+            }
+        }
+    }
+}
+
