@@ -3,11 +3,7 @@ pipeline {
 
     stages {
 
-        stage('Get Code') {
-            steps {
-                git 'https://github.com/JulioEguis/helloworld.git'
-            }
-        }
+      // elimine la etapa Get Code para que jenkins tome la rama feature_fix_converage, la def que añadi en calc_test.py no los tomaba, porque seguia ejecutando master
 
         stage('Unit') {
             steps {
